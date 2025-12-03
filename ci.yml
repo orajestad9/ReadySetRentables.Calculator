@@ -27,3 +27,21 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --configuration Release
+
+  deploy:
+    # Only deploy on push to main (not PRs)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to UM790 via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.UM790_HOST }}
+          username: ${{ secrets.UM790_USER }}
+          key: ${{ secrets.UM790_SSH_KEY }}
+          port: ${{ secrets.UM790_SSH_PORT || 22 }}
+          script: |
+            cd ~/apps/ReadySetRentables
+            ./deploy.sh
