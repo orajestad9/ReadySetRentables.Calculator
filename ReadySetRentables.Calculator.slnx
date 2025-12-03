@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/ReadySetRentables.Calculator.Api/ReadySetRentables.Calculator.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ReadySetRentables.Calculator.Tests/ReadySetRentables.Calculator.Tests.csproj" />
+  </Folder>
+</Solution>

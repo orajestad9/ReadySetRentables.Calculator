@@ -1,0 +1,55 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider / VS Code / other IDEs
+.idea/
+.vscode/
+*.userprefs
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Logs
+*.log
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Generated files
+GeneratedFiles/
+*.g.cs
+*.g.i.cs
+
+# ASP.NET Core
+wwwroot/
+**/appsettings.Development.json
+# Uncomment if you ever generate appsettings local files:
+# **/appsettings.Local.json
+
+# Resharper / tooling
+_ReSharper.*/
+*.DotSettings.user
+
+# Backup / temp
+*.bak
+*.tmp
+*.swp
+*~
+~$*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
