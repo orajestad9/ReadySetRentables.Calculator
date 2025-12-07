@@ -1,49 +1,100 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ReadySetRentables.Calculator.Api.Endpoints;
+using ReadySetRentables.Calculator.Api.Logic;
 using ReadySetRentables.Calculator.Api.Security;
 
-namespace ReadySetRentables.Calculator.Api
+namespace ReadySetRentables.Calculator.Api;
+
+/// <summary>
+/// Application entry point. Marked as partial for WebApplicationFactory testability.
+/// </summary>
+public partial class Program
 {
-    // Marked as partial so WebApplicationFactory<Program> in tests can see it
-    public partial class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Register services
+        builder.Services.AddSingleton<IRoiCalculator, RoiCalculator>();
+
+        // Rate limiting configuration
+        builder.Services.AddDefaultRateLimiting(builder.Configuration);
+
+        // CORS configuration
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        builder.Services.AddCors(options =>
         {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Rate limiting configuration (extension in /Security)
-            builder.Services.AddDefaultRateLimiting();
-
-            // Optional but nice for later
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            // Use the rate limiter middleware
-            app.UseRateLimiter();
-
-            if (app.Environment.IsDevelopment())
+            options.AddDefaultPolicy(policy =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+                if (allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                }
+            });
+        });
 
-            // Map calculator endpoints
-            app.MapCalculatorEndpoints();
+        // OpenAPI/Swagger
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
-            app.MapGet("/", () => Results.Ok(new
+        // Problem Details for consistent error responses
+        builder.Services.AddProblemDetails();
+
+        var app = builder.Build();
+
+        // Global exception handler
+        app.UseExceptionHandler(errorApp =>
+        {
+            errorApp.Run(async context =>
             {
-                name = "ReadySetRentables Calculator API",
-                status = "ok",
-                version = "v1"
-            }));
+                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogError("An unhandled exception occurred");
 
-            app.MapGet("/health", () => Results.Ok("healthy"));
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+                    title = "Internal Server Error",
+                    status = 500,
+                    detail = "An unexpected error occurred. Please try again later."
+                });
+            });
+        });
 
-            app.Run();
+        // Security headers
+        app.UseSecurityHeaders();
+
+        // CORS
+        app.UseCors();
+
+        // Rate limiting
+        app.UseRateLimiter();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
         }
+
+        // Map calculator endpoints
+        app.MapCalculatorEndpoints();
+
+        app.MapGet("/", () => Results.Ok(new
+        {
+            name = "ReadySetRentables Calculator API",
+            status = "ok",
+            version = "v1"
+        }));
+
+        app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+
+        app.Run();
     }
 }
