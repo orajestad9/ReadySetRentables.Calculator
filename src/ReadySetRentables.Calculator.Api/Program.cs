@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Endpoints;
 using ReadySetRentables.Calculator.Api.Logic;
 using ReadySetRentables.Calculator.Api.Security;
@@ -20,6 +21,9 @@ public partial class Program
 
         // Register services
         builder.Services.AddSingleton<IRoiCalculator, RoiCalculator>();
+        builder.Services.AddSingleton<INeighborhoodRepository, NeighborhoodRepository>();
+        builder.Services.AddSingleton<IMarketRepository, MarketRepository>();
+        builder.Services.AddSingleton<IAnalysisService, AnalysisService>();
 
         // Rate limiting configuration
         builder.Services.AddDefaultRateLimiting(builder.Configuration);
@@ -83,8 +87,10 @@ public partial class Program
             app.UseSwaggerUI();
         }
 
-        // Map calculator endpoints
+        // Map endpoints
         app.MapCalculatorEndpoints();
+        app.MapMarketEndpoints();
+        app.MapAnalyzeEndpoints();
 
         app.MapGet("/", () => Results.Ok(new
         {
