@@ -53,3 +53,13 @@ _ReSharper.*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+**/bin/
+**/obj/
+.git/
+.github/
+.vscode/
+**/*.user
+**/*.suo
+**/*.log
+**/.DS_Store
