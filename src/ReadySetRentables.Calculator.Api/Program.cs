@@ -75,13 +75,13 @@ public partial class Program
         // Security headers
         app.UseSecurityHeaders();
 
+        app.UseRouting();
+
         // CORS
         app.UseCors();
 
         // Rate limiting
-        app.UseRateLimiter();
-
-        app.UseRouting();
+        app.UseRateLimiter();        
 
         app.Use(async (context, next) =>
         {
