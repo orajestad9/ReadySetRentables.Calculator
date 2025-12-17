@@ -42,7 +42,7 @@ public partial class Program
                 }
             });
         });
-
+        
         // OpenAPI/Swagger
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -80,6 +80,19 @@ public partial class Program
 
         // Rate limiting
         app.UseRateLimiter();
+
+        app.UseRouting();
+
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/swagger"))
+            {
+                context.Response.Headers.Remove("Content-Security-Policy");
+                context.Response.Headers.Remove("Content-Security-Policy-Report-Only");
+            }
+
+            await next();
+        });
 
         if (app.Environment.IsDevelopment())
         {
