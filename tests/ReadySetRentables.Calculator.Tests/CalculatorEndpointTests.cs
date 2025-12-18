@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using ReadySetRentables.Calculator.Api;
 using ReadySetRentables.Calculator.Api.Domain;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -64,10 +67,26 @@ public class CalculatorEndpointTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task RoiEndpoint_EnforcesRateLimit()
     {
-        // 🔐 Use a *separate* factory + client so we don't poison the shared client
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Testing");
+    
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    // Force a tiny bucket so we reliably hit 429 fast
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["RateLimiting:TokenLimit"] = "5",
+                        ["RateLimiting:TokensPerPeriod"] = "5",
+                        ["RateLimiting:ReplenishmentSeconds"] = "3600", // no refill during test run
+                        ["RateLimiting:QueueLimit"] = "0"
+                    });
+                });
+            });
+    
         using var client = factory.CreateClient();
-
+    
         var input = new RentalInputs
         {
             NightlyRate = 100m,
@@ -77,21 +96,20 @@ public class CalculatorEndpointTests : IClassFixture<WebApplicationFactory<Progr
             MonthlyFixedCosts = 1000m,
             PurchasePrice = 300000m
         };
-
-        HttpStatusCode? lastStatus = null;
-
-        // We configured 60 requests/min; send more and expect a 429 at some point
-        for (var i = 0; i < 80; i++)
+    
+        var saw429 = false;
+    
+        for (var i = 0; i < 20; i++)
         {
             var response = await client.PostAsJsonAsync("/api/calculator/roi", input);
-            lastStatus = response.StatusCode;
-
-            if (lastStatus == HttpStatusCode.TooManyRequests)
+    
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
+                saw429 = true;
                 break;
             }
         }
-
-        Assert.Equal(HttpStatusCode.TooManyRequests, lastStatus);
+    
+        Assert.True(saw429, "Expected to hit rate limit (429) but never did.");
     }
 }
