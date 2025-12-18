@@ -101,9 +101,13 @@ public partial class Program
         }
 
         // Map endpoints
-        app.MapCalculatorEndpoints();
-        app.MapMarketEndpoints();
-        app.MapAnalyzeEndpoints();
+        var api = app.MapGroup("/api")
+             .RequireRateLimiting(RateLimitingPolicies.Default);
+
+        api.MapCalculatorEndpoints();
+        api.MapMarketEndpoints();
+        api.MapAnalyzeEndpoints();
+
 
         app.MapGet("/", () => Results.Ok(new
         {
