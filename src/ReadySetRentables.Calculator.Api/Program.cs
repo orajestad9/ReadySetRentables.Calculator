@@ -1,12 +1,8 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Endpoints;
 using ReadySetRentables.Calculator.Api.Logic;
 using ReadySetRentables.Calculator.Api.Security;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace ReadySetRentables.Calculator.Api;
 
@@ -51,21 +47,23 @@ public partial class Program
 
         // Global exception handler
         app.UseExceptionHandler(errorApp =>
+{
+        errorApp.Run(async context =>
         {
-            errorApp.Run(async context =>
-            {
-                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-                logger.LogError("An unhandled exception occurred");
-
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                context.Response.ContentType = "application/problem+json";
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-                    title = "Internal Server Error",
-                    status = 500,
-                    detail = "An unexpected error occurred. Please try again later."
-                });
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            var feature = context.Features.Get<IExceptionHandlerFeature>();
+            var ex = feature?.Error;
+    
+            logger.LogError(ex,
+                "Unhandled exception. {method} {path} TraceId={traceId}",
+                context.Request.Method,
+                context.Request.Path,
+                context.TraceIdentifier);
+    
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/problem+json";
+    
+            // return body handled below…
             });
         });
 
