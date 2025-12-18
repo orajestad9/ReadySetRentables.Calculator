@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using ReadySetRentables.Calculator.Api.Domain;
 using ReadySetRentables.Calculator.Api.Logic;
-using ReadySetRentables.Calculator.Api.Security;
 
 namespace ReadySetRentables.Calculator.Api.Endpoints;
 
@@ -20,9 +19,7 @@ public static class CalculatorEndpoints
     /// <returns>The endpoint route builder for chaining.</returns>
     public static IEndpointRouteBuilder MapCalculatorEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app
-            .MapGroup("/api/calculator")
-            .RequireRateLimiting(RateLimitingPolicies.Default);
+        var group = app.MapGroup("/calculator");
 
         group.MapPost("/roi", (RentalInputs inputs, IRoiCalculator calculator, ILogger<Program> logger) =>
         {
@@ -48,8 +45,7 @@ public static class CalculatorEndpoints
         .WithSummary("Calculate basic rental ROI metrics")
         .WithDescription("Calculates monthly/annual profit and simple cap-rate for a short-term rental.")
         .Produces<RentalResult>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status429TooManyRequests);
+        .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return app;
     }

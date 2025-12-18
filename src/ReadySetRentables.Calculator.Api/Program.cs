@@ -25,9 +25,6 @@ public partial class Program
         builder.Services.AddSingleton<IMarketRepository, MarketRepository>();
         builder.Services.AddSingleton<IAnalysisService, AnalysisService>();
 
-        // Rate limiting configuration
-        builder.Services.AddDefaultRateLimiting(builder.Configuration);
-
         // CORS configuration
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         builder.Services.AddCors(options =>
@@ -80,9 +77,6 @@ public partial class Program
         // CORS
         app.UseCors();
 
-        // Rate limiting
-        app.UseRateLimiter();        
-
         app.Use(async (context, next) =>
         {
             if (context.Request.Path.StartsWithSegments("/swagger"))
@@ -101,8 +95,7 @@ public partial class Program
         }
 
         // Map endpoints
-        var api = app.MapGroup("/api")
-             .RequireRateLimiting(RateLimitingPolicies.Default);
+        var api = app.MapGroup("/api");
 
         api.MapCalculatorEndpoints();
         api.MapMarketEndpoints();

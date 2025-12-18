@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using ReadySetRentables.Calculator.Api.Domain.Analysis;
 using ReadySetRentables.Calculator.Api.Logic;
-using ReadySetRentables.Calculator.Api.Security;
 
 namespace ReadySetRentables.Calculator.Api.Endpoints;
 
@@ -18,9 +17,7 @@ public static class AnalyzeEndpoints
     /// </summary>
     public static IEndpointRouteBuilder MapAnalyzeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app
-            .MapGroup("/api/v1")
-            .RequireRateLimiting(RateLimitingPolicies.Default);
+        var group = app.MapGroup("/v1");
 
         group.MapPost("/analyze", async (
             AnalyzeRequest request,
@@ -67,8 +64,7 @@ public static class AnalyzeEndpoints
         .WithDescription("Returns comprehensive investment analysis including ROI metrics, revenue estimates, expense projections, and neighborhood insights.")
         .Produces<AnalyzeResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status429TooManyRequests);
+        .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return app;
     }
