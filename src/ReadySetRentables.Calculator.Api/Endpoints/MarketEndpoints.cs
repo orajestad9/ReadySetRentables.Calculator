@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Domain.Analysis;
-using ReadySetRentables.Calculator.Api.Security;
 
 namespace ReadySetRentables.Calculator.Api.Endpoints;
 
@@ -17,9 +16,7 @@ public static class MarketEndpoints
     /// </summary>
     public static IEndpointRouteBuilder MapMarketEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app
-            .MapGroup("/api/v1")
-            .RequireRateLimiting(RateLimitingPolicies.Default);
+        var group = app.MapGroup("/v1");
 
         group.MapGet("/markets", async (IMarketRepository repo) =>
         {
@@ -29,8 +26,7 @@ public static class MarketEndpoints
         .WithName("GetMarkets")
         .WithSummary("Get available markets")
         .WithDescription("Returns a list of all available markets with neighborhood and listing counts.")
-        .Produces<MarketsResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status429TooManyRequests);
+        .Produces<MarketsResponse>(StatusCodes.Status200OK);
 
         group.MapGet("/markets/{market}/neighborhoods", async (string market, IMarketRepository repo) =>
         {
@@ -40,8 +36,7 @@ public static class MarketEndpoints
         .WithName("GetNeighborhoods")
         .WithSummary("Get neighborhoods for a market")
         .WithDescription("Returns all neighborhoods in the specified market with average price and occupancy data.")
-        .Produces<NeighborhoodsResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status429TooManyRequests);
+        .Produces<NeighborhoodsResponse>(StatusCodes.Status200OK);
 
         group.MapGet("/markets/{market}/neighborhoods/{neighborhood}/configurations",
             async (string market, string neighborhood, IMarketRepository repo) =>
@@ -52,8 +47,7 @@ public static class MarketEndpoints
         .WithName("GetConfigurations")
         .WithSummary("Get available bed/bath configurations")
         .WithDescription("Returns available bedroom/bathroom configurations for a neighborhood with listing counts and insight availability.")
-        .Produces<ConfigurationsResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status429TooManyRequests);
+        .Produces<ConfigurationsResponse>(StatusCodes.Status200OK);
 
         return app;
     }
