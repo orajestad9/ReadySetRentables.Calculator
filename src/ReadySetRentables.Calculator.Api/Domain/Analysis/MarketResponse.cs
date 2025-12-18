@@ -11,8 +11,8 @@ public sealed record MarketsResponse(List<MarketInfo> Markets);
 public sealed record MarketInfo(
     string Id,
     string Name,
-    int NeighborhoodCount,
-    int ListingCount
+    long NeighborhoodCount,
+    long ListingCount
 );
 
 /// <summary>
