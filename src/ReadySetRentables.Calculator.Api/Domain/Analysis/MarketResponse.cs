@@ -28,7 +28,7 @@ public sealed record NeighborhoodsResponse(
 /// </summary>
 public sealed record NeighborhoodInfo(
     string Name,
-    int ListingCount,
+    long ListingCount,
     decimal AvgPrice,
     decimal AvgOccupancy
 );
@@ -48,6 +48,6 @@ public sealed record ConfigurationsResponse(
 public sealed record ConfigurationInfo(
     int Bedrooms,
     decimal Bathrooms,
-    int ListingCount,
+    long ListingCount,
     bool HasInsights
 );
