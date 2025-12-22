@@ -24,6 +24,14 @@ public static class AnalyzeEndpoints
             IAnalysisService analysisService,
             ILogger<Program> logger) =>
         {
+            // Validate required fields
+            var validationErrors = ValidateRequest(request);
+            if (validationErrors.Count > 0)
+            {
+                logger.LogWarning("Validation failed for analyze request: {Errors}", string.Join(", ", validationErrors));
+                return Results.ValidationProblem(validationErrors);
+            }
+
             logger.LogInformation(
                 "Analyzing property: Neighborhood={Neighborhood}, Bedrooms={Bedrooms}, Bathrooms={Bathrooms}",
                 request.Neighborhood,
@@ -67,5 +75,17 @@ public static class AnalyzeEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return app;
+    }
+
+    private static Dictionary<string, string[]> ValidateRequest(AnalyzeRequest request)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request.PurchasePrice <= 0)
+        {
+            errors["PurchasePrice"] = ["PurchasePrice must be greater than zero."];
+        }
+
+        return errors;
     }
 }

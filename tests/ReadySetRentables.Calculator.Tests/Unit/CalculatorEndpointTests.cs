@@ -7,7 +7,7 @@ using ReadySetRentables.Calculator.Api;
 using ReadySetRentables.Calculator.Api.Domain;
 using Xunit;
 
-namespace ReadySetRentables.Calculator.Tests;
+namespace ReadySetRentables.Calculator.Tests.Unit;
 
 public class CalculatorEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {

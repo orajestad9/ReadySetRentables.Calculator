@@ -46,8 +46,8 @@ public sealed class MarketRepository : IMarketRepository
             SELECT
                 neighbourhood AS Name,
                 COALESCE(SUM(listing_count), 0) AS ListingCount,
-                ROUND(SUM(avg_price * listing_count) / NULLIF(SUM(listing_count), 0), 2) AS AvgPrice,
-                ROUND(SUM(avg_occupancy * listing_count) / NULLIF(SUM(listing_count), 0), 1) AS AvgOccupancy
+                COALESCE(NULLIF(ROUND(SUM(avg_price * listing_count) / NULLIF(SUM(listing_count), 0), 2), 'NaN'), 0) AS AvgPrice,
+                COALESCE(NULLIF(ROUND(SUM(avg_occupancy * listing_count) / NULLIF(SUM(listing_count), 0), 1), 'NaN'), 0) AS AvgOccupancy
             FROM neighborhood_metrics
             WHERE market = @Market
                 AND room_type = 'Entire home/apt'

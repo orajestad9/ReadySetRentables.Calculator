@@ -3,7 +3,7 @@ using ReadySetRentables.Calculator.Api.Domain;
 using ReadySetRentables.Calculator.Api.Logic;
 using Xunit;
 
-namespace ReadySetRentables.Calculator.Tests;
+namespace ReadySetRentables.Calculator.Tests.Unit;
 
 public class RoiCalculatorTests
 {
