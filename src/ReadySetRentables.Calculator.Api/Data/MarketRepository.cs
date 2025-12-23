@@ -100,10 +100,10 @@ public sealed class MarketRepository : IMarketRepository
                 COALESCE(ni.review_count, 0) AS ReviewCount,
                 ni.computed_at AS ComputedAt,
                 np.generated_at AS NeighborhoodGeneratedAt,
-                ROUND(SUM(nm.avg_revenue * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRevenue,
-                ROUND(SUM(nm.avg_occupancy * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgOccupancy,
-                ROUND(SUM(nm.avg_price * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgPrice,
-                ROUND(SUM(nm.avg_rating * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRating,
+                NULLIF(ROUND(SUM(nm.avg_revenue * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgRevenue,
+                NULLIF(ROUND(SUM(nm.avg_occupancy * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgOccupancy,
+                NULLIF(ROUND(SUM(nm.avg_price * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgPrice,
+                NULLIF(ROUND(SUM(nm.avg_rating * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgRating,
                 COALESCE(SUM(nm.listing_count), 0) AS ListingCount
             FROM neighborhood_insights ni
             LEFT JOIN neighborhood_profiles np
@@ -133,10 +133,10 @@ public sealed class MarketRepository : IMarketRepository
                 0 AS ReviewCount,
                 NULL AS ComputedAt,
                 np.generated_at AS NeighborhoodGeneratedAt,
-                ROUND(SUM(nm.avg_revenue * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRevenue,
-                ROUND(SUM(nm.avg_occupancy * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgOccupancy,
-                ROUND(SUM(nm.avg_price * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgPrice,
-                ROUND(SUM(nm.avg_rating * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRating,
+                NULLIF(ROUND(SUM(nm.avg_revenue * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgRevenue,
+                NULLIF(ROUND(SUM(nm.avg_occupancy * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgOccupancy,
+                NULLIF(ROUND(SUM(nm.avg_price * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgPrice,
+                NULLIF(ROUND(SUM(nm.avg_rating * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2), 'NaN') AS AvgRating,
                 COALESCE(SUM(nm.listing_count), 0) AS ListingCount
             FROM neighborhood_profiles np
             LEFT JOIN neighborhood_metrics nm
