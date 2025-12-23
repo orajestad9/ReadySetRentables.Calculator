@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  build-and-unit-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,15 +25,30 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test --no-build --configuration Release
-        env:
-          ConnectionStrings__PostgreSQL: ${{ secrets.POSTGRESQL_CONNECTION_STRING }}
+      - name: Unit Tests
+        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName!~Integration"
+
+  integration-test:
+    runs-on: self-hosted
+    needs: build-and-unit-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Integration Tests
+        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName~Integration"
 
   deploy:
     # Only deploy on push to main (not PRs)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build-and-test
+    needs: integration-test
     runs-on: self-hosted
 
     steps:
