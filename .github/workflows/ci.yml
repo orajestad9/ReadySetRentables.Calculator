@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-unit-test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,30 +25,13 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Unit Tests
+      - name: Test
         run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName!~Integration"
-
-  integration-test:
-    runs-on: self-hosted
-    needs: build-and-unit-test
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
-
-      - name: Integration Tests
-        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName~Integration"
 
   deploy:
     # Only deploy on push to main (not PRs)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: integration-test
+    needs: build-and-test
     runs-on: self-hosted
 
     steps:
