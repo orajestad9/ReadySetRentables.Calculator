@@ -89,7 +89,8 @@ public sealed class MarketRepository : IMarketRepository
     {
         await using var connection = new NpgsqlConnection(_connectionString);
 
-        const string sql = """
+        // First try to get combo-level data from neighborhood_insights
+        const string comboSql = """
             SELECT
                 ni.profile AS ComboProfile,
                 np.profile AS NeighborhoodProfile,
@@ -121,12 +122,48 @@ public sealed class MarketRepository : IMarketRepository
                      ni.review_count, ni.computed_at, np.profile, np.generated_at
             """;
 
-        var result = await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(sql, new
+        // Fallback: get neighborhood-level profile when no combo exists
+        const string fallbackSql = """
+            SELECT
+                NULL AS ComboProfile,
+                np.profile AS NeighborhoodProfile,
+                NULL AS SuccessFactorsJson,
+                NULL AS RiskFactorsJson,
+                NULL AS PremiumAmenitiesJson,
+                0 AS ReviewCount,
+                NULL AS ComputedAt,
+                np.generated_at AS NeighborhoodGeneratedAt,
+                ROUND(SUM(nm.avg_revenue * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRevenue,
+                ROUND(SUM(nm.avg_occupancy * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgOccupancy,
+                ROUND(SUM(nm.avg_price * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgPrice,
+                ROUND(SUM(nm.avg_rating * nm.listing_count) / NULLIF(SUM(nm.listing_count), 0), 2) AS AvgRating,
+                COALESCE(SUM(nm.listing_count), 0) AS ListingCount
+            FROM neighborhood_profiles np
+            LEFT JOIN neighborhood_metrics nm
+                ON np.neighbourhood = nm.neighbourhood
+                AND np.market = nm.market
+                AND nm.bedrooms = @Bedrooms
+                AND nm.room_type = 'Entire home/apt'
+                AND nm.property_type LIKE 'Entire%'
+            WHERE np.market = @Market
+                AND np.neighbourhood = @Neighborhood
+            GROUP BY np.profile, np.generated_at
+            """;
+
+        var result = await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(comboSql, new
         {
             Market = market,
             Neighborhood = neighborhood,
             Bedrooms = bedrooms,
             Bathrooms = bathrooms
+        });
+
+        // If no combo-level data, fall back to neighborhood-level profile
+        result ??= await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(fallbackSql, new
+        {
+            Market = market,
+            Neighborhood = neighborhood,
+            Bedrooms = bedrooms
         });
 
         if (result == null) return null;

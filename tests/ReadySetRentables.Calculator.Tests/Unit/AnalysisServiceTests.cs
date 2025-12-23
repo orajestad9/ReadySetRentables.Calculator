@@ -257,6 +257,39 @@ public class AnalysisServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_UsesNeighborhoodFallback_WhenNoComboInsightsExist()
+    {
+        // Simulates the repository-level fallback: no neighborhood_insights row exists,
+        // so the repository returns data from neighborhood_profiles only (no combo-level insights)
+        var data = CreateNeighborhoodData() with
+        {
+            ComboProfile = null,
+            NeighborhoodProfile = "Neighborhood-level fallback profile.",
+            SuccessFactors = [],
+            RiskFactors = [],
+            PremiumAmenities = [],
+            ReviewCount = 0,
+            ComputedAt = null
+        };
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromResult<PercentileData?>(null));
+
+        var result = await _service.AnalyzeAsync(CreateRequest());
+
+        Assert.True(result.Success);
+        Assert.Equal("Neighborhood-level fallback profile.", result.Response!.Profile.Text);
+        Assert.Equal("neighborhood_fallback", result.Response.Profile.Source);
+        Assert.Empty(result.Response.Insights.SuccessFactors);
+        Assert.Empty(result.Response.Insights.RiskFactors);
+        Assert.Empty(result.Response.Insights.PremiumAmenities);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_IncludesExpenseBreakdownWithSources()
     {
         var data = CreateNeighborhoodData();

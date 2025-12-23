@@ -48,14 +48,7 @@ public static class AnalyzeEndpoints
                     request.Bedrooms,
                     request.Bathrooms);
 
-                return Results.Problem(
-                    detail: result.ErrorMessage,
-                    statusCode: StatusCodes.Status404NotFound,
-                    title: "Data Not Found",
-                    extensions: new Dictionary<string, object?>
-                    {
-                        ["supportedCombinations"] = result.SupportedCombinations
-                    });
+                return Results.NoContent();
             }
 
             logger.LogInformation(
@@ -71,7 +64,7 @@ public static class AnalyzeEndpoints
         .WithSummary("Analyze a short-term rental investment opportunity")
         .WithDescription("Returns comprehensive investment analysis including ROI metrics, revenue estimates, expense projections, and neighborhood insights.")
         .Produces<AnalyzeResponse>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return app;

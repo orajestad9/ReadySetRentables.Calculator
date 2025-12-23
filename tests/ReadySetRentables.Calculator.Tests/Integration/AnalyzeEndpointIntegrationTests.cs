@@ -226,7 +226,7 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
     }
 
     [Fact]
-    public async Task Analyze_ReturnsNotFound_ForInvalidNeighborhood()
+    public async Task Analyze_ReturnsNoContent_ForInvalidNeighborhood()
     {
         var marketsResponse = await _client.GetFromJsonAsync<MarketsResponse>("/api/v1/markets");
         var marketId = marketsResponse!.Markets.First().Id;
@@ -247,7 +247,7 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var response = await _client.PostAsJsonAsync("/api/v1/analyze", request);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]
