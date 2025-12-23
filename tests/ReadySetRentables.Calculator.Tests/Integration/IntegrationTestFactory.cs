@@ -27,7 +27,8 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         {
             config.SetBasePath(apiProjectPath);
             config.AddJsonFile("appsettings.json", optional: false);
-            config.AddJsonFile("appsettings.Development.json", optional: false);
+            config.AddJsonFile("appsettings.Development.json", optional: true);
+            config.AddEnvironmentVariables();
         });
     }
 }

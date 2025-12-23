@@ -27,6 +27,8 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --configuration Release
+        env:
+          ConnectionStrings__PostgreSQL: ${{ secrets.POSTGRESQL_CONNECTION_STRING }}
 
   deploy:
     # Only deploy on push to main (not PRs)
