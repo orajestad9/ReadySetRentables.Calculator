@@ -4,7 +4,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nImprove endpoint error handling and API responses\n\n- Add structured logging for successful calculations and validation errors\n- Use RFC 7807 Problem Details format for error responses\n- Add OpenAPI response type annotations (200, 400, 429)\n- Update health endpoint to return JSON object\n- Add XML documentation to endpoint extension methods\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(dotnet test:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(dotnet build:*)"
     ],
     "deny": [],
     "ask": []

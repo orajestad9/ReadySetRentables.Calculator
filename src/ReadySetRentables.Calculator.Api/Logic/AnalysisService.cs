@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using ReadySetRentables.Calculator.Api.Configuration;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Domain.Analysis;
 
@@ -9,11 +11,15 @@ namespace ReadySetRentables.Calculator.Api.Logic;
 public sealed class AnalysisService : IAnalysisService
 {
     private readonly IMarketRepository _repository;
-    private const decimal DefaultInterestRate = 6.89m; // Freddie Mac PMMS fallback
+    private readonly AnalysisOptions _options;
 
-    public AnalysisService(IMarketRepository repository)
+    public AnalysisService(IMarketRepository repository, IOptions<AnalysisOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(options);
+
         _repository = repository;
+        _options = options.Value;
     }
 
     public async Task<AnalysisResult> AnalyzeAsync(AnalyzeRequest request)
@@ -38,19 +44,19 @@ public sealed class AnalysisService : IAnalysisService
             request.Neighborhood,
             request.Bedrooms);
 
-        var interestRate = request.InterestRate ?? DefaultInterestRate;
+        var interestRate = request.InterestRate ?? _options.DefaultInterestRate;
         var grossRevenue = data.AvgRevenue > 0 ? data.AvgRevenue : (percentiles?.RevenueP50 ?? 0);
 
-        var expenses = CalculateExpenses(request, grossRevenue, data.AvgPrice, interestRate);
+        var expenses = CalculateExpenses(request, grossRevenue, data.AvgPrice, interestRate, _options);
         var metrics = CalculateMetrics(request, grossRevenue, expenses, data.AvgPrice);
 
         var profileSource = data.ComboProfile != null ? "combo" : "neighborhood_fallback";
         var profileText = data.ComboProfile ?? data.NeighborhoodProfile ?? "No profile available for this combination.";
         var profileDate = data.ComputedAt ?? data.NeighborhoodGeneratedAt ?? DateTime.UtcNow;
 
-        var recommendation = DetermineRecommendation(metrics.CashOnCashReturn);
-        var confidence = DetermineConfidence(data.ListingCount);
-        var headline = BuildHeadline(metrics.CashOnCashReturn);
+        var recommendation = DetermineRecommendation(metrics.CashOnCashReturn, _options);
+        var confidence = DetermineConfidence(data.ListingCount, _options);
+        var headline = BuildHeadline(metrics.CashOnCashReturn, _options);
 
         var response = new AnalyzeResponse
         {
@@ -74,7 +80,7 @@ public sealed class AnalysisService : IAnalysisService
                 Source = profileSource
             },
             Metrics = metrics,
-            Revenue = BuildRevenueSection(data, percentiles),
+            Revenue = BuildRevenueSection(data, percentiles, _options),
             Expenses = expenses,
             Metadata = BuildMetadata(request, percentiles, data, interestRate)
         };
@@ -90,27 +96,28 @@ public sealed class AnalysisService : IAnalysisService
         AnalyzeRequest request,
         decimal grossRevenue,
         decimal avgPrice,
-        decimal interestRate)
+        decimal interestRate,
+        AnalysisOptions options)
     {
         var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
         var loanAmount = request.PurchasePrice - downPayment;
         var monthlyMortgage = CalculateMonthlyMortgage(loanAmount, interestRate, request.LoanTermYears);
         var annualMortgage = monthlyMortgage * 12;
 
-        var annualPropertyTax = request.PurchasePrice * 0.0125m;
-        var annualInsurance = 2400m;
+        var annualPropertyTax = request.PurchasePrice * options.PropertyTaxRate;
+        var annualInsurance = options.AnnualInsurance;
         var annualHoa = request.HoaMonthly * 12;
-        var annualUtilities = 3000m;
+        var annualUtilities = options.AnnualUtilities;
 
-        // Cleaning: $60 per turn, estimate turns from revenue/price
-        var estimatedTurns = avgPrice > 0 ? grossRevenue / avgPrice : 80m;
-        var annualCleaning = estimatedTurns * 60m;
+        // Cleaning: cost per turn, estimate turns from revenue/price
+        var estimatedTurns = avgPrice > 0 ? grossRevenue / avgPrice : options.DefaultEstimatedTurns;
+        var annualCleaning = estimatedTurns * options.CleaningCostPerTurn;
 
-        var platformFees = grossRevenue * 0.03m;
-        var maintenance = grossRevenue * 0.02m;
-        var totTax = grossRevenue * 0.105m;
-        var strPermit = 125m;
-        var propertyManagement = request.SelfManaged ? 0m : grossRevenue * 0.20m;
+        var platformFees = grossRevenue * options.PlatformFeeRate;
+        var maintenance = grossRevenue * options.MaintenanceRate;
+        var totTax = grossRevenue * options.TotTaxRate;
+        var strPermit = options.StrPermitFee;
+        var propertyManagement = request.SelfManaged ? 0m : grossRevenue * options.PropertyManagementRate;
 
         var totalAnnual = annualMortgage + annualPropertyTax + annualInsurance + annualHoa
             + annualUtilities + annualCleaning + platformFees + maintenance + totTax + strPermit + propertyManagement;
@@ -238,7 +245,7 @@ public sealed class AnalysisService : IAnalysisService
         };
     }
 
-    private static RevenueSection BuildRevenueSection(NeighborhoodData data, PercentileData? percentiles)
+    private static RevenueSection BuildRevenueSection(NeighborhoodData data, PercentileData? percentiles, AnalysisOptions options)
     {
         var occupancyRate = data.AvgOccupancy > 0 ? data.AvgOccupancy / 365m : 0;
 
@@ -260,8 +267,8 @@ public sealed class AnalysisService : IAnalysisService
                 Value = Math.Round(occupancyRate, 2),
                 SeasonalRange = new SeasonalRange
                 {
-                    Low = 0.55m,
-                    High = 0.89m
+                    Low = options.SeasonalOccupancyLow,
+                    High = options.SeasonalOccupancyHigh
                 }
             },
             GrossAnnualRevenue = Math.Round(data.AvgRevenue, 2),
@@ -314,23 +321,23 @@ public sealed class AnalysisService : IAnalysisService
         return 90;
     }
 
-    private static string DetermineRecommendation(decimal cashOnCash)
+    private static string DetermineRecommendation(decimal cashOnCash, AnalysisOptions options)
     {
-        if (cashOnCash >= 0.08m) return "buy";
-        if (cashOnCash >= 0.05m) return "consider";
+        if (cashOnCash >= options.BuyThreshold) return "buy";
+        if (cashOnCash >= options.ConsiderThreshold) return "consider";
         return "caution";
     }
 
-    private static string DetermineConfidence(int listingCount)
+    private static string DetermineConfidence(int listingCount, AnalysisOptions options)
     {
-        if (listingCount >= 50) return "high";
-        if (listingCount >= 20) return "medium";
+        if (listingCount >= options.HighConfidenceListingCount) return "high";
+        if (listingCount >= options.MediumConfidenceListingCount) return "medium";
         return "low";
     }
 
-    private static string BuildHeadline(decimal cashOnCash)
+    private static string BuildHeadline(decimal cashOnCash, AnalysisOptions options)
     {
-        var strength = cashOnCash >= 0.06m ? "Strong" : "Moderate";
+        var strength = cashOnCash >= options.StrongInvestmentThreshold ? "Strong" : "Moderate";
         return $"{strength} investment potential with {cashOnCash:P1} cash-on-cash return";
     }
 }

@@ -15,6 +15,8 @@ public static class SecurityHeadersMiddleware
     /// <returns>The application builder for chaining.</returns>
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
     {
+        ArgumentNullException.ThrowIfNull(app);
+
         return app.Use(async (context, next) =>
         {
             // Prevent MIME type sniffing

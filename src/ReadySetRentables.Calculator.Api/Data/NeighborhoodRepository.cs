@@ -12,6 +12,8 @@ public sealed class NeighborhoodRepository : INeighborhoodRepository
 
     public NeighborhoodRepository(IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         _connectionString = configuration.GetConnectionString("PostgreSQL")
             ?? throw new InvalidOperationException("PostgreSQL connection string not configured");
     }

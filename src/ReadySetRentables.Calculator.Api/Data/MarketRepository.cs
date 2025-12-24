@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Dapper;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using ReadySetRentables.Calculator.Api.Domain.Analysis;
 
@@ -11,11 +12,16 @@ namespace ReadySetRentables.Calculator.Api.Data;
 public sealed class MarketRepository : IMarketRepository
 {
     private readonly string _connectionString;
+    private readonly ILogger<MarketRepository> _logger;
 
-    public MarketRepository(IConfiguration configuration)
+    public MarketRepository(IConfiguration configuration, ILogger<MarketRepository> logger)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _connectionString = configuration.GetConnectionString("PostgreSQL")
             ?? throw new InvalidOperationException("PostgreSQL connection string not configured");
+        _logger = logger;
     }
 
     public async Task<List<MarketInfo>> GetMarketsAsync()
@@ -143,8 +149,7 @@ public sealed class MarketRepository : IMarketRepository
                 ON np.neighbourhood = nm.neighbourhood
                 AND np.market = nm.market
                 AND nm.bedrooms = @Bedrooms
-                AND nm.room_type = 'Entire home/apt'
-                AND nm.property_type LIKE 'Entire%'
+                AND nm.room_type = 'Entire home/apt'                
             WHERE np.market = @Market
                 AND np.neighbourhood = @Neighborhood
             GROUP BY np.profile, np.generated_at
@@ -190,15 +195,17 @@ public sealed class MarketRepository : IMarketRepository
     {
         await using var connection = new NpgsqlConnection(_connectionString);
 
+        // Note: PostgreSQL lowercases unquoted aliases. Use double quotes to preserve
+        // PascalCase for Dapper mapping to PercentileData record properties.
         const string sql = """
             SELECT
-                ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS RevenueP25,
-                ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS RevenueP50,
-                ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS RevenueP75,
-                ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY price)::numeric, 2) AS PriceP25,
-                ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY price)::numeric, 2) AS PriceP50,
-                ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY price)::numeric, 2) AS PriceP75,
-                COUNT(*) AS ComparablesCount
+                ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS "RevenueP25",
+                ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS "RevenueP50",
+                ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY estimated_revenue_l365d)::numeric, 2) AS "RevenueP75",
+                ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY price)::numeric, 2) AS "PriceP25",
+                ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY price)::numeric, 2) AS "PriceP50",
+                ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY price)::numeric, 2) AS "PriceP75",
+                COUNT(*) AS "ComparablesCount"
             FROM listings
             WHERE market = @Market
                 AND neighbourhood = @Neighborhood
@@ -215,15 +222,17 @@ public sealed class MarketRepository : IMarketRepository
         });
     }
 
-    private static List<string> ParseJsonArray(string? json)
+    private List<string> ParseJsonArray(string? json)
     {
         if (string.IsNullOrEmpty(json)) return [];
         try
         {
             return JsonSerializer.Deserialize<List<string>>(json) ?? [];
         }
-        catch
+        catch (JsonException ex)
         {
+            _logger.LogWarning(ex, "Failed to parse JSON array: {JsonPreview}",
+                json.Length > 100 ? json[..100] + "..." : json);
             return [];
         }
     }

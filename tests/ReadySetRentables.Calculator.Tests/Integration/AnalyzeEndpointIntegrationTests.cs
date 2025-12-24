@@ -34,7 +34,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         // Build the request using real data
         var request = new AnalyzeRequest
@@ -68,7 +70,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var request = new AnalyzeRequest
         {
@@ -111,7 +115,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var request = new AnalyzeRequest
         {
@@ -155,7 +161,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var request = new AnalyzeRequest
         {
@@ -194,7 +202,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var request = new AnalyzeRequest
         {
@@ -284,7 +294,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var request = new AnalyzeRequest
         {
@@ -322,7 +334,9 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
 
         var configurationsResponse = await _client.GetFromJsonAsync<ConfigurationsResponse>(
             $"/api/v1/markets/{marketId}/neighborhoods/{neighborhood.Name}/configurations");
-        var config = configurationsResponse!.Configurations.First();
+        // Select a configuration with valid bedrooms (>=1) and bathrooms (>=0.5)
+        var config = configurationsResponse!.Configurations
+            .First(c => c.Bedrooms >= 1 && c.Bathrooms >= 0.5m);
 
         var hoaMonthly = 350m;
         var request = new AnalyzeRequest

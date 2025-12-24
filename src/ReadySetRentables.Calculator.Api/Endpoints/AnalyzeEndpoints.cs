@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -73,10 +74,25 @@ public static class AnalyzeEndpoints
     private static Dictionary<string, string[]> ValidateRequest(AnalyzeRequest request)
     {
         var errors = new Dictionary<string, string[]>();
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(request);
 
-        if (request.PurchasePrice <= 0)
+        if (!Validator.TryValidateObject(request, validationContext, validationResults, validateAllProperties: true))
         {
-            errors["PurchasePrice"] = ["PurchasePrice must be greater than zero."];
+            foreach (var result in validationResults)
+            {
+                var memberName = result.MemberNames.FirstOrDefault() ?? "Request";
+                var errorMessage = result.ErrorMessage ?? "Validation failed.";
+
+                if (errors.TryGetValue(memberName, out var existingErrors))
+                {
+                    errors[memberName] = [.. existingErrors, errorMessage];
+                }
+                else
+                {
+                    errors[memberName] = [errorMessage];
+                }
+            }
         }
 
         return errors;

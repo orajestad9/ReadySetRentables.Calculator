@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using NSubstitute;
+using ReadySetRentables.Calculator.Api.Configuration;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Domain.Analysis;
 using ReadySetRentables.Calculator.Api.Logic;
@@ -12,11 +14,14 @@ public class AnalysisServiceTests
 {
     private readonly IMarketRepository _repository;
     private readonly AnalysisService _service;
+    private readonly AnalysisOptions _options;
 
     public AnalysisServiceTests()
     {
         _repository = Substitute.For<IMarketRepository>();
-        _service = new AnalysisService(_repository);
+        _options = new AnalysisOptions();
+        var optionsWrapper = Options.Create(_options);
+        _service = new AnalysisService(_repository, optionsWrapper);
     }
 
     [Fact]
@@ -110,7 +115,7 @@ public class AnalysisServiceTests
         var result = await _service.AnalyzeAsync(request);
 
         Assert.True(result.Success);
-        var expectedAnnualTax = request.PurchasePrice * 0.0125m;
+        var expectedAnnualTax = request.PurchasePrice * _options.PropertyTaxRate;
         Assert.Equal(
             Math.Round(expectedAnnualTax, 2),
             result.Response!.Expenses.Breakdown["propertyTax"].Value);
@@ -397,7 +402,7 @@ public class AnalysisServiceTests
         var request = CreateRequest() with { InterestRate = null };
         var result = await _service.AnalyzeAsync(request);
 
-        Assert.Contains("6.89%", result.Response!.Expenses.Breakdown["mortgage"].Source);
+        Assert.Contains($"{_options.DefaultInterestRate}%", result.Response!.Expenses.Breakdown["mortgage"].Source);
     }
 
     [Fact]

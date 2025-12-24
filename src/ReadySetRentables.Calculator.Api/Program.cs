@@ -1,3 +1,4 @@
+using ReadySetRentables.Calculator.Api.Configuration;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Endpoints;
 using ReadySetRentables.Calculator.Api.Logic;
@@ -14,6 +15,10 @@ public partial class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // Register configuration options
+        builder.Services.Configure<AnalysisOptions>(
+            builder.Configuration.GetSection(AnalysisOptions.SectionName));
 
         // Register services
         builder.Services.AddSingleton<IRoiCalculator, RoiCalculator>();
@@ -45,25 +50,35 @@ public partial class Program
 
         var app = builder.Build();
 
-        // Global exception handler
+        // Global exception handler with RFC 7807 Problem Details
         app.UseExceptionHandler(errorApp =>
-{
-        errorApp.Run(async context =>
         {
-            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-            var feature = context.Features.Get<IExceptionHandlerFeature>();
-            var ex = feature?.Error;
-    
-            logger.LogError(ex,
-                "Unhandled exception. {method} {path} TraceId={traceId}",
-                context.Request.Method,
-                context.Request.Path,
-                context.TraceIdentifier);
-    
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/problem+json";
-    
-            // return body handled below…
+            errorApp.Run(async context =>
+            {
+                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                var feature = context.Features.Get<IExceptionHandlerFeature>();
+                var ex = feature?.Error;
+
+                logger.LogError(ex,
+                    "Unhandled exception. {Method} {Path} TraceId={TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.TraceIdentifier);
+
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
+
+                var problemDetails = new
+                {
+                    type = "https://tools.ietf.org/html/rfc7807",
+                    title = "An unexpected error occurred",
+                    status = StatusCodes.Status500InternalServerError,
+                    detail = app.Environment.IsDevelopment() ? ex?.Message : "An internal server error occurred. Please try again later.",
+                    instance = context.Request.Path.ToString(),
+                    traceId = context.TraceIdentifier
+                };
+
+                await context.Response.WriteAsJsonAsync(problemDetails);
             });
         });
 
