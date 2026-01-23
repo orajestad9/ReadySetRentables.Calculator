@@ -63,3 +63,4 @@ desktop.ini
 **/*.suo
 **/*.log
 **/.DS_Store
+.env

@@ -2,6 +2,7 @@ using ReadySetRentables.Calculator.Api.Configuration;
 using ReadySetRentables.Calculator.Api.Data;
 using ReadySetRentables.Calculator.Api.Endpoints;
 using ReadySetRentables.Calculator.Api.Logic;
+using ReadySetRentables.Calculator.Api.Middleware;
 using ReadySetRentables.Calculator.Api.Security;
 using Microsoft.AspNetCore.Diagnostics;
 
@@ -21,7 +22,6 @@ public partial class Program
             builder.Configuration.GetSection(AnalysisOptions.SectionName));
 
         // Register services
-        builder.Services.AddSingleton<IRoiCalculator, RoiCalculator>();
         builder.Services.AddSingleton<INeighborhoodRepository, NeighborhoodRepository>();
         builder.Services.AddSingleton<IMarketRepository, MarketRepository>();
         builder.Services.AddSingleton<IAnalysisService, AnalysisService>();
@@ -85,6 +85,9 @@ public partial class Program
         // Security headers
         app.UseSecurityHeaders();
 
+        // Maintenance mode check (before routing to allow /health to pass through)
+        app.UseMiddleware<MaintenanceModeMiddleware>();
+
         app.UseRouting();
 
         // CORS
@@ -110,7 +113,6 @@ public partial class Program
         // Map endpoints
         var api = app.MapGroup("/api");
 
-        api.MapCalculatorEndpoints();
         api.MapMarketEndpoints();
         api.MapAnalyzeEndpoints();
 

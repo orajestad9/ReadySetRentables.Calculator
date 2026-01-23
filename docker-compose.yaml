@@ -1,0 +1,93 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: rsr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - rsr_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rsr-network
+
+  # LanceDB Vector Search API
+  lancedb-api:
+    build:
+      context: ./lancedb-vector-api/api
+      dockerfile: Dockerfile
+    container_name: rsr-lancedb-api
+    restart: unless-stopped
+    ports:
+      - "${LANCEDB_HOST_PORT:-8001}:8000"
+    volumes:
+      - ./lancedb-data:/data
+    environment:
+      LANCEDB_PATH: ${LANCEDB_PATH:-/data}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      LOG_LEVEL: ${LANCEDB_LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - rsr-network
+
+  # C# API
+  readysetrentables-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rsr-api
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_PORT:-5100}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+
+      # Use env vars (no secrets in compose)
+      ConnectionStrings__PostgreSQL: ${CONNECTIONSTRINGS__POSTGRESQL}
+      ConnectionStrings__Default: ${CONNECTIONSTRINGS__DEFAULT}
+
+      LanceDbApi__BaseUrl: ${LANCEDB_API_BASEURL:-http://lancedb-api:8000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lancedb-api:
+        condition: service_healthy
+    networks:
+      - rsr-network
+
+  # Frontend UI
+  readysetrentables-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rsr-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_HOST_PORT:-3001}:80"
+    environment:
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+    depends_on:
+      - readysetrentables-api
+    networks:
+      - rsr-network
+
+networks:
+  rsr-network:
+    driver: bridge
+
+volumes:
+  rsr_pgdata:
