@@ -24,18 +24,19 @@ public sealed class AnalysisService : IAnalysisService
 
     public async Task<AnalysisResult> AnalyzeAsync(AnalyzeRequest request)
     {
+        var bathrooms = request.Bathrooms ?? 2m;
         var data = await _repository.GetNeighborhoodDataAsync(
             request.Market,
             request.Neighborhood,
             request.Bedrooms,
-            request.Bathrooms);
+            bathrooms);
 
         if (data is null)
         {
             return new AnalysisResult
             {
                 Success = false,
-                ErrorMessage = $"No data available for {request.Neighborhood} {request.Bedrooms}BR/{request.Bathrooms}BA in {request.Market}"
+                ErrorMessage = $"No data available for {request.Neighborhood} {request.Bedrooms}BR/{bathrooms}BA in {request.Market}"
             };
         }
 
@@ -46,9 +47,10 @@ public sealed class AnalysisService : IAnalysisService
 
         var interestRate = request.InterestRate ?? _options.DefaultInterestRate;
         var grossRevenue = data.AvgRevenue > 0 ? data.AvgRevenue : (percentiles?.RevenueP50 ?? 0);
+        var purchasePrice = request.PurchasePrice ?? data.AvgPrice;
 
-        var expenses = CalculateExpenses(request, grossRevenue, data.AvgPrice, interestRate, _options);
-        var metrics = CalculateMetrics(request, grossRevenue, expenses, data.AvgPrice);
+        var expenses = CalculateExpenses(request, grossRevenue, data.AvgPrice, interestRate, purchasePrice, _options);
+        var metrics = CalculateMetrics(request, grossRevenue, expenses, purchasePrice, data.AvgPrice);
 
         var profileSource = data.ComboProfile != null ? "combo" : "neighborhood_fallback";
         var profileText = data.ComboProfile ?? data.NeighborhoodProfile ?? "No profile available for this combination.";
@@ -82,7 +84,7 @@ public sealed class AnalysisService : IAnalysisService
             Metrics = metrics,
             Revenue = BuildRevenueSection(data, percentiles, _options),
             Expenses = expenses,
-            Metadata = BuildMetadata(request, percentiles, data, interestRate)
+            Metadata = BuildMetadata(request, percentiles, data, interestRate, purchasePrice)
         };
 
         return new AnalysisResult
@@ -97,14 +99,15 @@ public sealed class AnalysisService : IAnalysisService
         decimal grossRevenue,
         decimal avgPrice,
         decimal interestRate,
+        decimal purchasePrice,
         AnalysisOptions options)
     {
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
-        var loanAmount = request.PurchasePrice - downPayment;
+        var downPayment = purchasePrice * (request.DownPaymentPercent / 100m);
+        var loanAmount = purchasePrice - downPayment;
         var monthlyMortgage = CalculateMonthlyMortgage(loanAmount, interestRate, request.LoanTermYears);
         var annualMortgage = monthlyMortgage * 12;
 
-        var annualPropertyTax = request.PurchasePrice * options.PropertyTaxRate;
+        var annualPropertyTax = purchasePrice * options.PropertyTaxRate;
         var annualInsurance = options.AnnualInsurance;
         var annualHoa = request.HoaMonthly * 12;
         var annualUtilities = options.AnnualUtilities;
@@ -221,16 +224,17 @@ public sealed class AnalysisService : IAnalysisService
         AnalyzeRequest request,
         decimal grossRevenue,
         ExpensesSection expenses,
+        decimal purchasePrice,
         decimal avgPrice)
     {
         var mortgageExpense = expenses.Breakdown.TryGetValue("mortgage", out var m) ? m.Value : 0;
         var noi = grossRevenue - (expenses.AnnualTotal - mortgageExpense);
         var cashFlow = grossRevenue - expenses.AnnualTotal;
 
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
+        var downPayment = purchasePrice * (request.DownPaymentPercent / 100m);
         var cashOnCash = downPayment > 0 ? cashFlow / downPayment : 0;
-        var capRate = request.PurchasePrice > 0 ? noi / request.PurchasePrice : 0;
-        var grossYield = request.PurchasePrice > 0 ? grossRevenue / request.PurchasePrice : 0;
+        var capRate = purchasePrice > 0 ? noi / purchasePrice : 0;
+        var grossYield = purchasePrice > 0 ? grossRevenue / purchasePrice : 0;
 
         var breakEvenOccupancy = avgPrice > 0 ? expenses.AnnualTotal / (avgPrice * 365) : 0;
 
@@ -280,9 +284,10 @@ public sealed class AnalysisService : IAnalysisService
         AnalyzeRequest request,
         PercentileData? percentiles,
         NeighborhoodData data,
-        decimal interestRate)
+        decimal interestRate,
+        decimal purchasePrice)
     {
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
+        var downPayment = purchasePrice * (request.DownPaymentPercent / 100m);
 
         return new MetadataSection
         {
