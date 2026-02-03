@@ -26,16 +26,14 @@ public sealed record AnalyzeRequest
     public int Bedrooms { get; init; }
 
     /// <summary>
-    /// Number of bathrooms (can be decimal, e.g., 1.5).
+    /// Number of bathrooms (can be decimal, e.g., 1.5). Optional.
     /// </summary>
-    [Range(0.5, 10, ErrorMessage = "Bathrooms must be between 0.5 and 10.")]
-    public decimal Bathrooms { get; init; }
+    public decimal? Bathrooms { get; init; }
 
     /// <summary>
-    /// Property purchase price in USD.
+    /// Property purchase price in USD. Optional.
     /// </summary>
-    [Range(1, double.MaxValue, ErrorMessage = "PurchasePrice must be greater than zero.")]
-    public decimal PurchasePrice { get; init; }
+    public decimal? PurchasePrice { get; init; }
 
     /// <summary>
     /// Down payment percentage (0-100). Defaults to 20%.

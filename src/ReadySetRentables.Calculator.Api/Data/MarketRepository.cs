@@ -91,11 +91,11 @@ public sealed class MarketRepository : IMarketRepository
         return results.ToList();
     }
 
-    public async Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int bedrooms, decimal bathrooms)
+    public async Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int bedrooms, decimal? bathrooms)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
 
-        // First try to get combo-level data from neighborhood_insights
+        // First try to get combo-level data from neighborhood_insights (only when bathrooms is provided)
         const string comboSql = """
             SELECT
                 ni.profile AS ComboProfile,
@@ -128,7 +128,7 @@ public sealed class MarketRepository : IMarketRepository
                      ni.review_count, ni.computed_at, np.profile, np.generated_at
             """;
 
-        // Fallback: get neighborhood-level profile when no combo exists
+        // Fallback: get neighborhood-level profile when no combo exists or bathrooms is not provided
         const string fallbackSql = """
             SELECT
                 NULL AS ComboProfile,
@@ -149,21 +149,27 @@ public sealed class MarketRepository : IMarketRepository
                 ON np.neighbourhood = nm.neighbourhood
                 AND np.market = nm.market
                 AND nm.bedrooms = @Bedrooms
-                AND nm.room_type = 'Entire home/apt'                
+                AND nm.room_type = 'Entire home/apt'
             WHERE np.market = @Market
                 AND np.neighbourhood = @Neighborhood
             GROUP BY np.profile, np.generated_at
             """;
 
-        var result = await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(comboSql, new
-        {
-            Market = market,
-            Neighborhood = neighborhood,
-            Bedrooms = bedrooms,
-            Bathrooms = bathrooms
-        });
+        NeighborhoodDataRaw? result = null;
 
-        // If no combo-level data, fall back to neighborhood-level profile
+        // Only attempt combo query when bathrooms is provided
+        if (bathrooms.HasValue)
+        {
+            result = await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(comboSql, new
+            {
+                Market = market,
+                Neighborhood = neighborhood,
+                Bedrooms = bedrooms,
+                Bathrooms = bathrooms.Value
+            });
+        }
+
+        // If no combo-level data (or bathrooms was null), fall back to neighborhood-level profile
         result ??= await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(fallbackSql, new
         {
             Market = market,

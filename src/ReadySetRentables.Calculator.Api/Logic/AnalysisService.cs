@@ -47,8 +47,9 @@ public sealed class AnalysisService : IAnalysisService
         var interestRate = request.InterestRate ?? _options.DefaultInterestRate;
         var grossRevenue = data.AvgRevenue > 0 ? data.AvgRevenue : (percentiles?.RevenueP50 ?? 0);
 
-        var expenses = CalculateExpenses(request, grossRevenue, data.AvgPrice, interestRate, _options);
-        var metrics = CalculateMetrics(request, grossRevenue, expenses, data.AvgPrice);
+        var purchasePrice = request.PurchasePrice ?? 0m;
+        var expenses = CalculateExpenses(request, purchasePrice, grossRevenue, data.AvgPrice, interestRate, _options);
+        var metrics = CalculateMetrics(purchasePrice, request.DownPaymentPercent, grossRevenue, expenses, data.AvgPrice);
 
         var profileSource = data.ComboProfile != null ? "combo" : "neighborhood_fallback";
         var profileText = data.ComboProfile ?? data.NeighborhoodProfile ?? "No profile available for this combination.";
@@ -94,17 +95,18 @@ public sealed class AnalysisService : IAnalysisService
 
     private static ExpensesSection CalculateExpenses(
         AnalyzeRequest request,
+        decimal purchasePrice,
         decimal grossRevenue,
         decimal avgPrice,
         decimal interestRate,
         AnalysisOptions options)
     {
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
-        var loanAmount = request.PurchasePrice - downPayment;
+        var downPayment = purchasePrice * (request.DownPaymentPercent / 100m);
+        var loanAmount = purchasePrice - downPayment;
         var monthlyMortgage = CalculateMonthlyMortgage(loanAmount, interestRate, request.LoanTermYears);
         var annualMortgage = monthlyMortgage * 12;
 
-        var annualPropertyTax = request.PurchasePrice * options.PropertyTaxRate;
+        var annualPropertyTax = purchasePrice * options.PropertyTaxRate;
         var annualInsurance = options.AnnualInsurance;
         var annualHoa = request.HoaMonthly * 12;
         var annualUtilities = options.AnnualUtilities;
@@ -218,7 +220,8 @@ public sealed class AnalysisService : IAnalysisService
     }
 
     private static MetricsSection CalculateMetrics(
-        AnalyzeRequest request,
+        decimal purchasePrice,
+        decimal downPaymentPercent,
         decimal grossRevenue,
         ExpensesSection expenses,
         decimal avgPrice)
@@ -227,10 +230,10 @@ public sealed class AnalysisService : IAnalysisService
         var noi = grossRevenue - (expenses.AnnualTotal - mortgageExpense);
         var cashFlow = grossRevenue - expenses.AnnualTotal;
 
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
+        var downPayment = purchasePrice * (downPaymentPercent / 100m);
         var cashOnCash = downPayment > 0 ? cashFlow / downPayment : 0;
-        var capRate = request.PurchasePrice > 0 ? noi / request.PurchasePrice : 0;
-        var grossYield = request.PurchasePrice > 0 ? grossRevenue / request.PurchasePrice : 0;
+        var capRate = purchasePrice > 0 ? noi / purchasePrice : 0;
+        var grossYield = purchasePrice > 0 ? grossRevenue / purchasePrice : 0;
 
         var breakEvenOccupancy = avgPrice > 0 ? expenses.AnnualTotal / (avgPrice * 365) : 0;
 
@@ -282,7 +285,7 @@ public sealed class AnalysisService : IAnalysisService
         NeighborhoodData data,
         decimal interestRate)
     {
-        var downPayment = request.PurchasePrice * (request.DownPaymentPercent / 100m);
+        var downPayment = (request.PurchasePrice ?? 0m) * (request.DownPaymentPercent / 100m);
 
         return new MetadataSection
         {

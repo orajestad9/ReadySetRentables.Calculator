@@ -55,54 +55,20 @@ public class AnalyzeValidationTests
         Assert.DoesNotContain(results, r => r.MemberNames.Contains("Bedrooms"));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(0.4)]
-    [InlineData(11)]
-    [InlineData(-1)]
-    public void AnalyzeRequest_ValidatesBathroomsRange(decimal bathrooms)
+    [Fact]
+    public void AnalyzeRequest_AcceptsNullBathrooms()
     {
-        var request = CreateValidRequest() with { Bathrooms = bathrooms };
-
-        var results = ValidateRequest(request);
-
-        Assert.Contains(results, r => r.MemberNames.Contains("Bathrooms"));
-    }
-
-    [Theory]
-    [InlineData(0.5)]
-    [InlineData(1)]
-    [InlineData(2.5)]
-    [InlineData(10)]
-    public void AnalyzeRequest_AcceptsValidBathrooms(decimal bathrooms)
-    {
-        var request = CreateValidRequest() with { Bathrooms = bathrooms };
+        var request = CreateValidRequest() with { Bathrooms = null };
 
         var results = ValidateRequest(request);
 
         Assert.DoesNotContain(results, r => r.MemberNames.Contains("Bathrooms"));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    [InlineData(-100000)]
-    public void AnalyzeRequest_ValidatesPurchasePriceGreaterThanZero(decimal purchasePrice)
+    [Fact]
+    public void AnalyzeRequest_AcceptsNullPurchasePrice()
     {
-        var request = CreateValidRequest() with { PurchasePrice = purchasePrice };
-
-        var results = ValidateRequest(request);
-
-        Assert.Contains(results, r => r.MemberNames.Contains("PurchasePrice"));
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(100000)]
-    [InlineData(1000000)]
-    public void AnalyzeRequest_AcceptsValidPurchasePrice(decimal purchasePrice)
-    {
-        var request = CreateValidRequest() with { PurchasePrice = purchasePrice };
+        var request = CreateValidRequest() with { PurchasePrice = null };
 
         var results = ValidateRequest(request);
 
@@ -242,8 +208,6 @@ public class AnalyzeValidationTests
         Market = "san-diego",
         Neighborhood = "Mission Bay",
         Bedrooms = 2,
-        Bathrooms = 2m,
-        PurchasePrice = 850000m,
         DownPaymentPercent = 20m,
         InterestRate = 7m,
         LoanTermYears = 30,

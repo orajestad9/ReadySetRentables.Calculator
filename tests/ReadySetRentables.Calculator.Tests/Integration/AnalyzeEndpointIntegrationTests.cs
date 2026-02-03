@@ -261,28 +261,6 @@ public class AnalyzeEndpointIntegrationTests : IClassFixture<IntegrationTestFact
     }
 
     [Fact]
-    public async Task Analyze_ReturnsBadRequest_ForInvalidPurchasePrice()
-    {
-        var request = new AnalyzeRequest
-        {
-            Market = "san-diego",
-            Neighborhood = "Mission Bay",
-            Bedrooms = 2,
-            Bathrooms = 1m,
-            PurchasePrice = 0m, // Invalid
-            DownPaymentPercent = 20m,
-            InterestRate = 7m,
-            LoanTermYears = 30,
-            SelfManaged = true,
-            HoaMonthly = 0m
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/v1/analyze", request);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
     public async Task Analyze_IncludesPropertyManagement_WhenNotSelfManaged()
     {
         var marketsResponse = await _client.GetFromJsonAsync<MarketsResponse>("/api/v1/markets");

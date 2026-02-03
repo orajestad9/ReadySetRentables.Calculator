@@ -25,7 +25,7 @@ public interface IMarketRepository
     /// <summary>
     /// Gets comprehensive neighborhood data for analysis including insights, profile, and metrics.
     /// </summary>
-    Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int bedrooms, decimal bathrooms);
+    Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int bedrooms, decimal? bathrooms);
 
     /// <summary>
     /// Gets price and revenue percentiles from listings data.
