@@ -115,7 +115,7 @@ public class AnalysisServiceTests
         var result = await _service.AnalyzeAsync(request);
 
         Assert.True(result.Success);
-        var expectedAnnualTax = (request.PurchasePrice ?? 0m) * _options.PropertyTaxRate;
+        var expectedAnnualTax = request.PurchasePrice!.Value * _options.PropertyTaxRate;
         Assert.Equal(
             Math.Round(expectedAnnualTax, 2),
             result.Response!.Expenses.Breakdown["propertyTax"].Value);
