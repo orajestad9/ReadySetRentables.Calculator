@@ -20,30 +20,6 @@ services:
     networks:
       - rsr-network
 
-  # LanceDB Vector Search API
-  lancedb-api:
-    build:
-      context: ./lancedb-vector-api/api
-      dockerfile: Dockerfile
-    container_name: rsr-lancedb-api
-    restart: unless-stopped
-    ports:
-      - "${LANCEDB_HOST_PORT:-8001}:8000"
-    volumes:
-      - ./lancedb-data:/data
-    environment:
-      LANCEDB_PATH: ${LANCEDB_PATH:-/data}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
-      LOG_LEVEL: ${LANCEDB_LOG_LEVEL:-INFO}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - rsr-network
-
   # C# API
   readysetrentables-api:
     build:
@@ -59,12 +35,9 @@ services:
       # Use env vars (no secrets in compose)
       ConnectionStrings__PostgreSQL: ${CONNECTIONSTRINGS__POSTGRESQL}
       ConnectionStrings__Default: ${CONNECTIONSTRINGS__DEFAULT}
-
-      LanceDbApi__BaseUrl: ${LANCEDB_API_BASEURL:-http://lancedb-api:8000}
+      
     depends_on:
       postgres:
-        condition: service_healthy
-      lancedb-api:
         condition: service_healthy
     networks:
       - rsr-network
