@@ -505,6 +505,7 @@ public class AnalysisServiceTests
         Market = "san-diego",
         Neighborhood = "Mission Bay",
         Bedrooms = 2,
+        Bathrooms = 2m,
         DownPaymentPercent = 20m,
         InterestRate = 7m,
         LoanTermYears = 30,

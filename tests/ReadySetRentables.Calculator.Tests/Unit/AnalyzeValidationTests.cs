@@ -56,9 +56,36 @@ public class AnalyzeValidationTests
     }
 
     [Fact]
-    public void AnalyzeRequest_AcceptsNullBathrooms()
+    public void AnalyzeRequest_ValidatesRequiredBathrooms()
     {
         var request = CreateValidRequest() with { Bathrooms = null };
+
+        var results = ValidateRequest(request);
+
+        Assert.Contains(results, r => r.MemberNames.Contains("Bathrooms"));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(10.5)]
+    public void AnalyzeRequest_ValidatesBathroomsRange(decimal bathrooms)
+    {
+        var request = CreateValidRequest() with { Bathrooms = bathrooms };
+
+        var results = ValidateRequest(request);
+
+        Assert.Contains(results, r => r.MemberNames.Contains("Bathrooms"));
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1)]
+    [InlineData(2.5)]
+    [InlineData(10)]
+    public void AnalyzeRequest_AcceptsValidBathrooms(decimal bathrooms)
+    {
+        var request = CreateValidRequest() with { Bathrooms = bathrooms };
 
         var results = ValidateRequest(request);
 
@@ -208,6 +235,7 @@ public class AnalyzeValidationTests
         Market = "san-diego",
         Neighborhood = "Mission Bay",
         Bedrooms = 2,
+        Bathrooms = 2m,
         DownPaymentPercent = 20m,
         InterestRate = 7m,
         LoanTermYears = 30,

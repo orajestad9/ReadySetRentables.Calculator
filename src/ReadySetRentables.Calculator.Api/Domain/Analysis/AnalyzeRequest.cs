@@ -26,8 +26,10 @@ public sealed record AnalyzeRequest
     public int Bedrooms { get; init; }
 
     /// <summary>
-    /// Number of bathrooms (can be decimal, e.g., 1.5). Optional.
+    /// Number of bathrooms (can be decimal, e.g., 1.5).
     /// </summary>
+    [Required(ErrorMessage = "Bathrooms is required.")]
+    [Range(0.5, 10, ErrorMessage = "Bathrooms must be between 0.5 and 10.")]
     public decimal? Bathrooms { get; init; }
 
     /// <summary>

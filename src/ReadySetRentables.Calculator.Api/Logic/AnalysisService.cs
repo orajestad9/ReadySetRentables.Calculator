@@ -24,7 +24,7 @@ public sealed class AnalysisService : IAnalysisService
 
     public async Task<AnalysisResult> AnalyzeAsync(AnalyzeRequest request)
     {
-        var bathrooms = request.Bathrooms ?? 2m;
+        var bathrooms = request.Bathrooms!.Value;
         var data = await _repository.GetNeighborhoodDataAsync(
             request.Market,
             request.Neighborhood,
