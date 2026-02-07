@@ -1,20 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
-DEPLOY_DIR="$HOME/apps/ReadySetRentables.Deploy"   # <-- your "compose host" folder
-API_DIR="$DEPLOY_DIR/api"                          # <-- clone of API repo
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_SERVICE_NAME="readysetrentables-api"
 
 echo "Deploying API only..."
 
-# 1) Update API repo
-cd "$API_DIR"
+# 1) Update repository in place (single-folder model)
+cd "$REPO_DIR"
 git fetch origin
 git reset --hard origin/main
 
 # 2) Build + restart ONLY the API container
-cd "$DEPLOY_DIR"
-docker compose up -d --build rsr-api
+docker compose up -d --build "$API_SERVICE_NAME"
 
 # 3) Optional: show status
-docker compose ps rsr-api
+docker compose ps "$API_SERVICE_NAME"
 echo "API deploy complete."
