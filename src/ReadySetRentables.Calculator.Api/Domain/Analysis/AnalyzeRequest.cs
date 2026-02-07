@@ -20,9 +20,9 @@ public sealed record AnalyzeRequest
     public required string Neighborhood { get; init; }
 
     /// <summary>
-    /// Number of bedrooms (1-10).
+    /// Number of bedrooms (0-10).
     /// </summary>
-    [Range(1, 10, ErrorMessage = "Bedrooms must be between 1 and 10.")]
+    [Range(0, 10, ErrorMessage = "Bedrooms must be between 0 and 10.")]
     public int Bedrooms { get; init; }
 
     /// <summary>

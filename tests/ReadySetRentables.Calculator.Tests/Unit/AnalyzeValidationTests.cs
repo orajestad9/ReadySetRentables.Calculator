@@ -29,7 +29,6 @@ public class AnalyzeValidationTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(-1)]
     [InlineData(11)]
     [InlineData(100)]
@@ -43,6 +42,7 @@ public class AnalyzeValidationTests
     }
 
     [Theory]
+    [InlineData(0)]
     [InlineData(1)]
     [InlineData(5)]
     [InlineData(10)]
