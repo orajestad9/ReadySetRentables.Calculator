@@ -3,6 +3,7 @@ services:
   postgres:
     image: postgres:16
     container_name: rsr-postgres
+    shm_size: "1gb"
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
