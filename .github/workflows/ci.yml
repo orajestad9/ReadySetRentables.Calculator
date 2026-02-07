@@ -35,6 +35,13 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Sync deploy repo
+        run: |
+          cd ~/apps/ReadySetRentables
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
       - name: Deploy
         run: |
           cd ~/apps/ReadySetRentables
