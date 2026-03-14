@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using ReadySetRentables.Calculator.Api.Data;
 using NSubstitute;
 using Xunit;
 
@@ -49,21 +50,21 @@ public class JsonParsingTests
     [Fact]
     public void ParseJsonArray_ReturnsEmptyList_WhenJsonIsNull()
     {
-        var result = ParseJsonArrayHelper(null);
+        var result = InvokeParseJsonArray(null);
         Assert.Empty(result);
     }
 
     [Fact]
     public void ParseJsonArray_ReturnsEmptyList_WhenJsonIsEmpty()
     {
-        var result = ParseJsonArrayHelper("");
+        var result = InvokeParseJsonArray("");
         Assert.Empty(result);
     }
 
     [Fact]
     public void ParseJsonArray_ReturnsEmptyList_WhenJsonIsWhitespace()
     {
-        var result = ParseJsonArrayHelper("   ");
+        var result = InvokeParseJsonArray("   ");
         Assert.Empty(result);
     }
 
@@ -71,7 +72,7 @@ public class JsonParsingTests
     public void ParseJsonArray_ParsesValidJsonArray()
     {
         var json = "[\"item1\", \"item2\", \"item3\"]";
-        var result = ParseJsonArrayHelper(json);
+        var result = InvokeParseJsonArray(json);
 
         Assert.Equal(3, result.Count);
         Assert.Equal("item1", result[0]);
@@ -82,21 +83,21 @@ public class JsonParsingTests
     [Fact]
     public void ParseJsonArray_ReturnsEmptyList_WhenJsonIsInvalid()
     {
-        var result = ParseJsonArrayHelper("not valid json");
+        var result = InvokeParseJsonArray("not valid json");
         Assert.Empty(result);
     }
 
     [Fact]
     public void ParseJsonArray_ReturnsEmptyList_WhenJsonIsObject()
     {
-        var result = ParseJsonArrayHelper("{\"key\": \"value\"}");
+        var result = InvokeParseJsonArray("{\"key\": \"value\"}");
         Assert.Empty(result);
     }
 
     [Fact]
     public void ParseJsonArray_HandlesEmptyArray()
     {
-        var result = ParseJsonArrayHelper("[]");
+        var result = InvokeParseJsonArray("[]");
         Assert.Empty(result);
     }
 
@@ -105,7 +106,7 @@ public class JsonParsingTests
     {
         // JsonSerializer will include null as null strings in the list
         var json = "[\"item1\", null, \"item3\"]";
-        var result = ParseJsonArrayHelper(json);
+        var result = InvokeParseJsonArray(json);
 
         Assert.Equal(3, result.Count);
         Assert.Equal("item1", result[0]);
@@ -117,7 +118,7 @@ public class JsonParsingTests
     public void ParseJsonArray_HandlesUnicodeCharacters()
     {
         var json = "[\"café\", \"日本語\", \"emoji 🏠\"]";
-        var result = ParseJsonArrayHelper(json);
+        var result = InvokeParseJsonArray(json);
 
         Assert.Equal(3, result.Count);
         Assert.Equal("café", result[0]);
@@ -129,7 +130,7 @@ public class JsonParsingTests
     public void ParseJsonArray_HandlesSpecialCharacters()
     {
         var json = "[\"with\\\"quotes\", \"with\\nnewline\", \"with\\ttab\"]";
-        var result = ParseJsonArrayHelper(json);
+        var result = InvokeParseJsonArray(json);
 
         Assert.Equal(3, result.Count);
         Assert.Equal("with\"quotes", result[0]);
@@ -137,19 +138,16 @@ public class JsonParsingTests
         Assert.Equal("with\ttab", result[2]);
     }
 
-    /// <summary>
-    /// Helper method that mirrors the private ParseJsonArray logic for testing.
-    /// </summary>
-    private static List<string?> ParseJsonArrayHelper(string? json)
+    private static List<string?> InvokeParseJsonArray(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return [];
-        try
-        {
-            return JsonSerializer.Deserialize<List<string?>>(json) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
+        var configuration = Substitute.For<IConfiguration>();
+        configuration.GetConnectionString("PostgreSQL").Returns("Host=localhost;Database=test");
+        var logger = Substitute.For<ILogger<MarketRepository>>();
+        var repository = new MarketRepository(configuration, logger);
+
+        var method = typeof(MarketRepository).GetMethod("ParseJsonArray", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+
+        return (List<string?>)method!.Invoke(repository, [json])!;
     }
 }

@@ -486,6 +486,96 @@ public class AnalysisServiceTests
         Assert.Equal(percentiles.PriceP75, result.Response.Revenue.NightlyRate.Range.P75);
     }
 
+    [Fact]
+    public async Task AnalyzeAsync_UsesAveragePrice_WhenPurchasePriceNotProvided()
+    {
+        var data = CreateNeighborhoodData() with { AvgPrice = 925000m };
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromResult<PercentileData?>(null));
+
+        var request = CreateRequestWithoutOptionalFields() with { PurchasePrice = null };
+        var result = await _service.AnalyzeAsync(request);
+
+        Assert.Equal(
+            Math.Round(data.AvgPrice * _options.PropertyTaxRate, 2),
+            result.Response!.Expenses.Breakdown["propertyTax"].Value);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_HandlesZeroInterestRateMortgage()
+    {
+        var data = CreateNeighborhoodData();
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromResult<PercentileData?>(null));
+
+        var request = CreateRequest() with { InterestRate = 0m };
+        var result = await _service.AnalyzeAsync(request);
+
+        var loanAmount = request.PurchasePrice!.Value * (1m - (request.DownPaymentPercent / 100m));
+        var expectedAnnualMortgage = loanAmount / request.LoanTermYears;
+        Assert.Equal(
+            Math.Round(expectedAnnualMortgage, 2),
+            result.Response!.Expenses.Breakdown["mortgage"].Value);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_UsesDefaultProfileTextAndCurrentDate_WhenProfilesAreMissing()
+    {
+        var data = CreateNeighborhoodData() with
+        {
+            ComboProfile = null,
+            NeighborhoodProfile = null,
+            ComputedAt = null,
+            NeighborhoodGeneratedAt = null
+        };
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromResult<PercentileData?>(null));
+
+        var before = DateTime.UtcNow;
+        var result = await _service.AnalyzeAsync(CreateRequest());
+        var after = DateTime.UtcNow;
+
+        Assert.Equal("No profile available for this combination.", result.Response!.Profile.Text);
+        Assert.InRange(result.Response.Profile.GeneratedAt, before, after);
+    }
+
+    [Theory]
+    [InlineData(150, 25)]
+    [InlineData(225, 50)]
+    [InlineData(275, 75)]
+    [InlineData(350, 90)]
+    public async Task AnalyzeAsync_AssignsNightlyRatePercentile(decimal avgPrice, int expectedPercentile)
+    {
+        var data = CreateNeighborhoodData() with { AvgPrice = avgPrice };
+        var percentiles = CreatePercentileData();
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromResult<PercentileData?>(percentiles));
+
+        var result = await _service.AnalyzeAsync(CreateRequest());
+
+        Assert.Equal(expectedPercentile, result.Response!.Revenue.NightlyRate.Percentile);
+    }
+
     private static AnalyzeRequest CreateRequest() => new()
     {
         Market = "san-diego",

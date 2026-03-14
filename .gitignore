@@ -1,16 +1,16 @@
-# Build results
-bin/
-obj/
+# Build outputs
+**/bin/
+**/obj/
 
-# Visual Studio
+# IDEs / tooling
 .vs/
+.vscode/
+.idea/
 *.user
 *.suo
-
-# Rider / VS Code / other IDEs
-.idea/
-.vscode/
 *.userprefs
+*.DotSettings.user
+_ReSharper.*/
 
 # NuGet
 *.nupkg
@@ -18,31 +18,31 @@ obj/
 packages/
 .nuget/
 
-# Logs
-*.log
-
-# Test results
+# Test results / coverage
 TestResults/
+coverage/
 *.trx
 *.coverage
 *.coveragexml
+coverage.cobertura.xml
 
 # Generated files
 GeneratedFiles/
-*.g.cs
-*.g.i.cs
 
-# ASP.NET Core
-wwwroot/
+# Local config / secrets
+.env
+.env.*
+!.env.example
 **/appsettings.Development.json
-# Uncomment if you ever generate appsettings local files:
-# **/appsettings.Local.json
+**/appsettings.Local.json
+.claude/settings.local.json
+.dotnet-home/
 
-# Resharper / tooling
-_ReSharper.*/
-*.DotSettings.user
+# Local workspace artifacts
+frontend
 
-# Backup / temp
+# Logs / temp files
+*.log
 *.bak
 *.tmp
 *.swp
@@ -53,17 +53,3 @@ _ReSharper.*/
 .DS_Store
 Thumbs.db
 desktop.ini
-
-**/bin/
-**/obj/
-.git/
-.github/
-!.github/
-!.github/workflows/
-!.github/workflows/*.yml
-.vscode/
-**/*.user
-**/*.suo
-**/*.log
-**/.DS_Store
-.env

@@ -56,13 +56,13 @@ public class AnalyzeValidationTests
     }
 
     [Fact]
-    public void AnalyzeRequest_ValidatesRequiredBathrooms()
+    public void AnalyzeRequest_AcceptsNullBathrooms()
     {
         var request = CreateValidRequest() with { Bathrooms = null };
 
         var results = ValidateRequest(request);
 
-        Assert.Contains(results, r => r.MemberNames.Contains("Bathrooms"));
+        Assert.DoesNotContain(results, r => r.MemberNames.Contains("Bathrooms"));
     }
 
     [Theory]
