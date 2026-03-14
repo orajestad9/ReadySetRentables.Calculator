@@ -105,6 +105,38 @@ public class ApiEndpointTests
     }
 
     [Fact]
+    public async Task Analyze_BindsMissingBedroomsAndBathrooms_AsNull()
+    {
+        using var factory = new TestApiFactory();
+        factory.AnalysisService.AnalyzeAsync(Arg.Any<AnalyzeRequest>())
+            .Returns(new AnalysisResult
+            {
+                Success = true,
+                Response = CreateAnalyzeResponse()
+            });
+
+        using var client = factory.CreateClient();
+        var request = new AnalyzeRequest
+        {
+            Market = "san-diego",
+            Neighborhood = "Mission Beach",
+            PurchasePrice = 900000m,
+            DownPaymentPercent = 20m,
+            InterestRate = 6.5m,
+            LoanTermYears = 30,
+            SelfManaged = true,
+            HoaMonthly = 0m
+        };
+
+        var response = await client.PostAsJsonAsync("/api/v1/analyze", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await factory.AnalysisService.Received(1).AnalyzeAsync(Arg.Is<AnalyzeRequest>(r =>
+            r.Bedrooms is null &&
+            r.Bathrooms is null));
+    }
+
+    [Fact]
     public async Task Markets_ReturnsRepositoryData()
     {
         using var factory = new TestApiFactory();

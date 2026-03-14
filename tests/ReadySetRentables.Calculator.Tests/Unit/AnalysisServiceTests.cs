@@ -28,7 +28,7 @@ public class AnalysisServiceTests
     public async Task AnalyzeAsync_ReturnsFailure_WhenNoDataFound()
     {
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(null));
 
         var request = CreateRequest();
@@ -46,10 +46,10 @@ public class AnalysisServiceTests
         var percentiles = CreatePercentileData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(percentiles));
 
         var request = CreateRequest();
@@ -60,15 +60,48 @@ public class AnalysisServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_HandlesMissingBedroomsAndBathrooms()
+    {
+        var data = CreateNeighborhoodData();
+
+        _repository.GetNeighborhoodDataAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
+            .Returns(Task.FromResult<NeighborhoodData?>(data));
+        _repository.GetPercentilesAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
+            .Returns(Task.FromResult<PercentileData?>(null));
+
+        var request = CreateRequestWithoutOptionalFields() with
+        {
+            Bedrooms = null,
+            Bathrooms = null
+        };
+
+        var result = await _service.AnalyzeAsync(request);
+
+        Assert.True(result.Success);
+        await _repository.Received(1).GetNeighborhoodDataAsync(
+            request.Market,
+            request.Neighborhood,
+            null,
+            null);
+        await _repository.Received(1).GetPercentilesAsync(
+            request.Market,
+            request.Neighborhood,
+            null);
+        Assert.Equal("SDG&E neighborhood average, 2024", result.Response!.Expenses.Breakdown["utilities"].Source);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_IncludesHeadlineAndRecommendation()
     {
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -85,10 +118,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest();
@@ -105,10 +138,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest();
@@ -127,10 +160,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData() with { ListingCount = 100 };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -144,10 +177,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData() with { ListingCount = 30 };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -161,10 +194,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData() with { ListingCount = 10 };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -181,10 +214,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -204,10 +237,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -227,10 +260,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -249,10 +282,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -278,10 +311,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -300,10 +333,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -336,10 +369,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest() with { SelfManaged = true };
@@ -355,10 +388,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest() with { SelfManaged = false };
@@ -374,10 +407,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest() with { HoaMonthly = 400m };
@@ -393,10 +426,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest() with { InterestRate = null };
@@ -411,10 +444,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -430,10 +463,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest();
@@ -450,10 +483,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -473,10 +506,10 @@ public class AnalysisServiceTests
         var percentiles = CreatePercentileData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(percentiles));
 
         var result = await _service.AnalyzeAsync(CreateRequest());
@@ -492,10 +525,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData() with { AvgPrice = 925000m };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequestWithoutOptionalFields() with { PurchasePrice = null };
@@ -512,10 +545,10 @@ public class AnalysisServiceTests
         var data = CreateNeighborhoodData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var request = CreateRequest() with { InterestRate = 0m };
@@ -540,10 +573,10 @@ public class AnalysisServiceTests
         };
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(null));
 
         var before = DateTime.UtcNow;
@@ -565,10 +598,10 @@ public class AnalysisServiceTests
         var percentiles = CreatePercentileData();
 
         _repository.GetNeighborhoodDataAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<decimal?>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<decimal?>())
             .Returns(Task.FromResult<NeighborhoodData?>(data));
         _repository.GetPercentilesAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>())
             .Returns(Task.FromResult<PercentileData?>(percentiles));
 
         var result = await _service.AnalyzeAsync(CreateRequest());

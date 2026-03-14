@@ -24,19 +24,20 @@ public sealed class AnalysisService : IAnalysisService
 
     public async Task<AnalysisResult> AnalyzeAsync(AnalyzeRequest request)
     {
-        var bathrooms = request.Bathrooms!.Value;
         var data = await _repository.GetNeighborhoodDataAsync(
             request.Market,
             request.Neighborhood,
             request.Bedrooms,
-            bathrooms);
+            request.Bathrooms);
+
+        var configurationLabel = BuildConfigurationLabel(request.Bedrooms, request.Bathrooms);
 
         if (data is null)
         {
             return new AnalysisResult
             {
                 Success = false,
-                ErrorMessage = $"No data available for {request.Neighborhood} {request.Bedrooms}BR/{bathrooms}BA in {request.Market}"
+                ErrorMessage = $"No data available for {request.Neighborhood} {configurationLabel} in {request.Market}"
             };
         }
 
@@ -111,6 +112,9 @@ public sealed class AnalysisService : IAnalysisService
         var annualInsurance = options.AnnualInsurance;
         var annualHoa = request.HoaMonthly * 12;
         var annualUtilities = options.AnnualUtilities;
+        var utilitiesSource = request.Bedrooms.HasValue
+            ? $"SDG&E average {request.Bedrooms.Value}BR, 2024"
+            : "SDG&E neighborhood average, 2024";
 
         // Cleaning: cost per turn, estimate turns from revenue/price
         var estimatedTurns = avgPrice > 0 ? grossRevenue / avgPrice : options.DefaultEstimatedTurns;
@@ -159,7 +163,7 @@ public sealed class AnalysisService : IAnalysisService
                 {
                     Value = Math.Round(annualUtilities, 2),
                     Monthly = false,
-                    Source = $"SDG&E average {request.Bedrooms}BR, 2024"
+                    Source = utilitiesSource
                 },
                 ["cleaning"] = new ExpenseItem
                 {
@@ -344,5 +348,25 @@ public sealed class AnalysisService : IAnalysisService
     {
         var strength = cashOnCash >= options.StrongInvestmentThreshold ? "Strong" : "Moderate";
         return $"{strength} investment potential with {cashOnCash:P1} cash-on-cash return";
+    }
+
+    private static string BuildConfigurationLabel(int? bedrooms, decimal? bathrooms)
+    {
+        if (bedrooms.HasValue && bathrooms.HasValue)
+        {
+            return $"{bedrooms.Value}BR/{bathrooms.Value}BA";
+        }
+
+        if (bedrooms.HasValue)
+        {
+            return $"{bedrooms.Value}BR";
+        }
+
+        if (bathrooms.HasValue)
+        {
+            return $"{bathrooms.Value}BA";
+        }
+
+        return "all configurations";
     }
 }

@@ -91,7 +91,7 @@ public sealed class MarketRepository : IMarketRepository
         return results.ToList();
     }
 
-    public async Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int bedrooms, decimal? bathrooms)
+    public async Task<NeighborhoodData?> GetNeighborhoodDataAsync(string market, string neighborhood, int? bedrooms, decimal? bathrooms)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
 
@@ -148,7 +148,7 @@ public sealed class MarketRepository : IMarketRepository
             LEFT JOIN neighborhood_metrics nm
                 ON np.neighbourhood = nm.neighbourhood
                 AND np.market = nm.market
-                AND nm.bedrooms = @Bedrooms
+                AND (@Bedrooms IS NULL OR nm.bedrooms = @Bedrooms)
                 AND nm.room_type = 'Entire home/apt'
             WHERE np.market = @Market
                 AND np.neighbourhood = @Neighborhood
@@ -158,13 +158,13 @@ public sealed class MarketRepository : IMarketRepository
         NeighborhoodDataRaw? result = null;
 
         // Only attempt combo query when bathrooms is provided
-        if (bathrooms.HasValue)
+        if (bedrooms.HasValue && bathrooms.HasValue)
         {
             result = await connection.QueryFirstOrDefaultAsync<NeighborhoodDataRaw>(comboSql, new
             {
                 Market = market,
                 Neighborhood = neighborhood,
-                Bedrooms = bedrooms,
+                Bedrooms = bedrooms.Value,
                 Bathrooms = bathrooms.Value
             });
         }
@@ -197,7 +197,7 @@ public sealed class MarketRepository : IMarketRepository
         };
     }
 
-    public async Task<PercentileData?> GetPercentilesAsync(string market, string neighborhood, int bedrooms)
+    public async Task<PercentileData?> GetPercentilesAsync(string market, string neighborhood, int? bedrooms)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
 
@@ -215,7 +215,7 @@ public sealed class MarketRepository : IMarketRepository
             FROM listings
             WHERE market = @Market
                 AND neighbourhood = @Neighborhood
-                AND bedrooms = @Bedrooms
+                AND (@Bedrooms IS NULL OR bedrooms = @Bedrooms)
                 AND room_type = 'Entire home/apt'
                 AND estimated_revenue_l365d IS NOT NULL
             """;
