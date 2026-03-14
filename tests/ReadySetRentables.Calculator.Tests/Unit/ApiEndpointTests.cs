@@ -132,8 +132,8 @@ public class ApiEndpointTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         await factory.AnalysisService.Received(1).AnalyzeAsync(Arg.Is<AnalyzeRequest>(r =>
-            r.Bedrooms is null &&
-            r.Bathrooms is null));
+            r.Bedrooms == null &&
+            r.Bathrooms == null));
     }
 
     [Fact]
