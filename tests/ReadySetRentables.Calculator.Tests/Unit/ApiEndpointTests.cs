@@ -137,6 +137,54 @@ public class ApiEndpointTests
     }
 
     [Fact]
+    public async Task Analyze_ReturnsInsights_WhenBedroomsAndBathroomsAreOmittedFromRequest()
+    {
+        using var factory = new TestApiFactory();
+        var analysisResponse = CreateAnalyzeResponse();
+        factory.AnalysisService.AnalyzeAsync(Arg.Any<AnalyzeRequest>())
+            .Returns(new AnalysisResult
+            {
+                Success = true,
+                Response = analysisResponse with
+                {
+                    Profile = analysisResponse.Profile with
+                    {
+                        Source = "neighborhood_fallback"
+                    },
+                    Insights = analysisResponse.Insights with
+                    {
+                        Source = "neighborhood_fallback"
+                    }
+                }
+            });
+
+        using var client = factory.CreateClient();
+        var request = new
+        {
+            Market = "san-diego",
+            Neighborhood = "Mission Beach",
+            PurchasePrice = 900000m,
+            DownPaymentPercent = 20m,
+            InterestRate = 6.5m,
+            LoanTermYears = 30,
+            SelfManaged = true,
+            HoaMonthly = 0m
+        };
+
+        var response = await client.PostAsJsonAsync("/api/v1/analyze", request);
+        var payload = await response.Content.ReadFromJsonAsync<AnalyzeResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(payload);
+        Assert.NotNull(payload!.Insights);
+        Assert.Equal("neighborhood_fallback", payload.Insights.Source);
+        Assert.NotEmpty(payload.Insights.SuccessFactors);
+        await factory.AnalysisService.Received(1).AnalyzeAsync(Arg.Is<AnalyzeRequest>(r =>
+            r.Bedrooms == null &&
+            r.Bathrooms == null));
+    }
+
+    [Fact]
     public async Task Markets_ReturnsRepositoryData()
     {
         using var factory = new TestApiFactory();

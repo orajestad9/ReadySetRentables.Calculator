@@ -43,8 +43,8 @@ public sealed class NeighborhoodRepository : INeighborhoodRepository
         return await connection.QuerySingleOrDefaultAsync<NeighborhoodInsight>(sql, new
         {
             Neighborhood = neighborhood,
-            Bedrooms = bedrooms,
-            Bathrooms = bathrooms
+            //Bedrooms = bedrooms,
+            //Bathrooms = bathrooms
         });
     }
 
