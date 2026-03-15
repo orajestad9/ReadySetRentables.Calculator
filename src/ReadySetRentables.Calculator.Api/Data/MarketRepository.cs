@@ -122,8 +122,8 @@ public sealed class MarketRepository : IMarketRepository
                 AND nm.property_type LIKE 'Entire%'
             WHERE ni.market = @Market
                 AND ni.neighbourhood = @Neighborhood
-                AND ni.bedrooms = @Bedrooms
-                AND ni.bathrooms = @Bathrooms
+                --AND ni.bedrooms = @Bedrooms
+                --AND ni.bathrooms = @Bathrooms
             GROUP BY ni.profile, ni.success_factors, ni.risk_factors, ni.premium_amenities,
                      ni.review_count, ni.computed_at, np.profile, np.generated_at
             """;
