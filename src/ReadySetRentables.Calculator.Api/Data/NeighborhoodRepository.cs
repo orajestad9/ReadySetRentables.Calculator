@@ -35,8 +35,8 @@ public sealed class NeighborhoodRepository : INeighborhoodRepository
                 listing_count AS ListingCount
             FROM neighborhood_insights
             WHERE LOWER(neighbourhood) = LOWER(@Neighborhood)
-              AND bedrooms = @Bedrooms
-              AND bathrooms = @Bathrooms
+              --AND bedrooms = @Bedrooms
+              --AND bathrooms = @Bathrooms
             LIMIT 1
             """;
 
@@ -79,8 +79,8 @@ public sealed class NeighborhoodRepository : INeighborhoodRepository
                 AVG(estimated_occupancy_l365d) AS AvgOccupancy
             FROM listings
             WHERE LOWER(neighbourhood) = LOWER(@Neighborhood)
-              AND bedrooms = @Bedrooms
-              AND bathrooms = @Bathrooms
+              --AND bedrooms = @Bedrooms
+              --AND bathrooms = @Bathrooms
             HAVING COUNT(*) > 0
             """;
 
