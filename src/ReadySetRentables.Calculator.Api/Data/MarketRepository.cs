@@ -59,6 +59,7 @@ public sealed class MarketRepository : IMarketRepository
                 AND room_type = 'Entire home/apt'
                 AND property_type LIKE 'Entire%'
             GROUP BY neighbourhood
+            HAVING SUM(listing_count) > 50
             ORDER BY SUM(listing_count) DESC
             """;
 
