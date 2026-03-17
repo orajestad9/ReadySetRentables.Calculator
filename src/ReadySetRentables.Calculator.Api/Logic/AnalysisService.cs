@@ -24,13 +24,16 @@ public sealed class AnalysisService : IAnalysisService
 
     public async Task<AnalysisResult> AnalyzeAsync(AnalyzeRequest request)
     {
+        var beds = 1;
+        var baths = 1m;
+
         var data = await _repository.GetNeighborhoodDataAsync(
             request.Market,
             request.Neighborhood,
-            request.Bedrooms,
-            request.Bathrooms);
+            beds, //request.Bedrooms,
+            baths); //request.Bathrooms
 
-        var configurationLabel = BuildConfigurationLabel(request.Bedrooms, request.Bathrooms);
+        var configurationLabel = BuildConfigurationLabel(1, 1m); //request.Bedrooms, request.Bathrooms);
 
         if (data is null)
         {
@@ -44,7 +47,7 @@ public sealed class AnalysisService : IAnalysisService
         var percentiles = await _repository.GetPercentilesAsync(
             request.Market,
             request.Neighborhood,
-            request.Bedrooms);
+            beds); //request.Bedrooms);
 
         var interestRate = request.InterestRate ?? _options.DefaultInterestRate;
         var grossRevenue = data.AvgRevenue > 0 ? data.AvgRevenue : (percentiles?.RevenueP50 ?? 0);

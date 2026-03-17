@@ -23,13 +23,13 @@ public sealed record AnalyzeRequest
     /// Number of bedrooms (0-10). Optional.
     /// </summary>
     [Range(0, 10, ErrorMessage = "Bedrooms must be between 0 and 10.")]
-    public int? Bedrooms { get; init; }
+    public int? Bedrooms { get; init; } = 1;
 
     /// <summary>
     /// Number of bathrooms (can be decimal, e.g., 1.5).
     /// </summary>
     [Range(0.5, 10, ErrorMessage = "Bathrooms must be between 0.5 and 10.")]
-    public decimal? Bathrooms { get; init; }
+    public decimal? Bathrooms { get; init; } = 1;
 
     /// <summary>
     /// Property purchase price in USD. Optional.
