@@ -35,8 +35,6 @@ public sealed class NeighborhoodRepository : INeighborhoodRepository
                 listing_count AS ListingCount
             FROM neighborhood_insights
             WHERE LOWER(neighbourhood) = LOWER(@Neighborhood)
-              --AND bedrooms = @Bedrooms
-              --AND bathrooms = @Bathrooms
             LIMIT 1
             """;
 
