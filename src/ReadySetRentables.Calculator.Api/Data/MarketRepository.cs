@@ -36,6 +36,19 @@ public sealed class MarketRepository : IMarketRepository
                 COALESCE(SUM(listing_count), 0) AS ListingCount
             FROM neighborhood_metrics
             WHERE market IS NOT NULL
+                AND market NOT IN (
+                    'paris',
+                    'london',
+                    'rio-de-janeiro',
+                    'mexico-city',
+                    'lisbon',
+                    'melbourne',
+                    'barcelona',
+                    'sydney',
+                    'vienna',
+                    'berlin',
+                    'amsterdam'
+                )
             GROUP BY market
             ORDER BY SUM(listing_count) DESC
             """;
